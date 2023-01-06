@@ -49,8 +49,12 @@ Up = prescribed_dof(0,X);
 % Distributed body forces (N/kg) -- weight
 Be = body_forces(X,g);
 
+% Punctual forces
+Fe = [0 1 1];
+
 % Distributed surface forces (N/m2) -- pressure
 Pe = surface_forces(X,p_inf,n_u,n_l,AoA);
+Qe = [  zeros(Nnod,1),   linspace(1,Nnod,Nnod)',   3*ones(Nnod,1)];
 
 %% BEAMS matrices
 
@@ -85,11 +89,11 @@ P = zeros(Nnod,6);
 B = zeros(Nnod,6);
 
 % Force vector assembly
-% ...
+[FB] = compute_force_vector_beams(Nnod-1,Fe,Qe,Be,Tn_b,MBe,RB,NekB,leB,xi,w);
 
 %% Boundary conditions
 
-% ...
+[u,If,Ip] = Compute_boundary_conditions(Nnod-1,Up);
 
 %% Save data
 
@@ -103,19 +107,21 @@ load('Variables.mat');
 end
 
 %% Solve system
+K = KB;
+F = FB;
 
-% ...
+[u,FR] = solve_system(u,K,F,If,Ip);
 
 %% Compute strain and stress
 
-% ...
+[Sa,Ss,St,Sb,Fx,Fy,Fz,Mx,My,Mz] = compute_interal_forces_strain(Nnod-1,Tn_b,u,BBa,BBs,BBt,BBb,RB,KBa,KBb,KBs,KBt);
 
 %% Plot (a) - deformed state and stress distribution
 
 scale = 1; % Set appropriate scale to visualize the deformation
 
 % only for testing
-u = zeros
+SigVM = Sa;
 plotWing(X,Tn_s,Tm_s,u,scale,SigVM);
     
 %% Modal analysis

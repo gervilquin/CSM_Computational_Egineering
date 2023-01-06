@@ -27,17 +27,21 @@ g = -9.81;
     %4. Stringers
 
     % Youngs modulus
-    % material: 1       2       3       4
-    E = [       200     180     100     190]; %GPa
+    % material: 1       2       3       
+    ES = [       200     180     100]; %GPa
+    EB = [       190]; %GPa
 
     % Poisson ratio
-    nu = [      0.27    0.3     0.33    0.3];
+    nuS = [      0.27    0.3     0.33];
+    nuB = [      0.3];
 
     % Density
-    rho = [     1500    3300    2000    2200]; %kg/m^3
+    rhoS = [     1500    3300    2000]; %kg/m^3
+    rhoB = [     2200]; %kg/m^3
 
     % Thickness / diameter
-    h = [       1.5     15      3       10]; %mm
+    hS = [       1.5     15      3]; %mm
+    dB = [       10]; %mm
 
 % Prescribed degrees of freedom
 Up = prescribed_dof(0,X);
@@ -45,25 +49,29 @@ Up = prescribed_dof(0,X);
 % Distributed body forces (N/kg) -- weight
 Be = body_forces(X,g);
 
+% Punctual forces
+Fe = [0 1 1];
+
 % Distributed surface forces (N/m2) -- pressure
 Pe = surface_forces(X,p_inf,n_u,n_l,AoA);
+Qe = [  zeros(Nnod,1),   linspace(1,Nnod,Nnod)',   3*ones(Nnod,1)];
 
 %% BEAMS matrices
 
 % Compute beam section properties
-[G,j_p,A,J,Iy,Iz,ky,kz,kt] = beam_section_properties(E(4),nu(4),h(4));
-G = [0 0 0 G];
-j_p = [0 0 0 j_p];
-A = [0 0 0 A];
-J = [0 0 0 J];
-Iy = [0 0 0 Iy];
-Iz = [0 0 0 Iz];
-ky = [0 0 0 ky];
-kz = [0 0 0 kz];
-kt = [0 0 0 kt];
+[G,j_p,A,J,Iy,Iz,ky,kz,kt] = beam_section_properties(EB(1),nuB(1),dB(1));
+GB = [0 0 0 G];
+j_pB = [j_p];
+AB = [A];
+JB = [J];
+IyB = [Iy];
+IzB = [Iz];
+kyB = [ky];
+kzB = [kz];
+ktB = [kt];
 
 % Element matrices and assembly
-[KB,KBb,KBa,KBs,KBt,BBb,BBa,BBs,BBt,MB,MBe,RB,NekB,leB,xi,w] = beam_global_matrices_assembly(Nnod,Ndof,X,Tn_b,Tm_b,j_p,E,A,Iy,Iz,G,ky,kz,kt,J,rho);
+[KB,KBb,KBa,KBs,KBt,BBb,BBa,BBs,BBt,MB,MBe,RB,NekB,leB,xi,w] = beam_global_matrices_assembly(Nnod,Ndof,X,Tn_b,Tm_b,j_p,EB,AB ,IyB,IzB,GB,kyB,kzB,ktB,JB,rhoB);
 
 %% SHELLS matrices
 
@@ -81,11 +89,11 @@ P = zeros(Nnod,6);
 B = zeros(Nnod,6);
 
 % Force vector assembly
-% ...
+[FB] = compute_force_vector_beams(Nnod-1,Fe,Qe,Be,Tn_b,MB,RB,NekB,le,xi,w);
 
 %% Boundary conditions
 
-% ...
+[u,If,Ip] = Compute_boundary_conditions(Nnod-1,Up);
 
 %% Save data
 
@@ -99,8 +107,10 @@ load('Variables.mat');
 end
 
 %% Solve system
+K = KB;
+F = FB;
 
-% ...
+[u,FR] = Solve_system(u,K,F,If,Ip);
 
 %% Compute strain and stress
 
@@ -111,7 +121,6 @@ end
 scale = 1; % Set appropriate scale to visualize the deformation
 
 % only for testing
-u = zeros
 plotWing(X,Tn_s,Tm_s,u,scale,SigVM);
     
 %% Modal analysis
