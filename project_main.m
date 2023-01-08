@@ -1,3 +1,4 @@
+clc
 clear
 close all
 addpath("functions\")
@@ -75,19 +76,9 @@ ktB = [kt];
 
 %% SHELLS matrices
 
-% Initialization
-KS = sparse(Ndof,Ndof);
-MS = sparse(Ndof,Ndof);
+% Compute stiffness and mass matrix
+[KS, MS, Bs, Bmt, Bmn, Bb, R] = ComputeKmatrix(Ndof,X,Tn_s,Tn_b,Tm_s,ES,hS,nuS,rhoS);
 
-% Element matrices and assembly
-% 2) Compute stiffness matrix
-    [K, Bs, Bmt, Bmn, Bb, R] = ComputeKmatrix(X,Tn_s,Tm_s,ES,hS,nuS,rhoS);
-
-    % 3) Compute global force vector
-    [F] = ComputeFvector(X,Tn_s,Pe);
-    
-    % 4) Boundary conditions
-    [If, Ip, u] = ComputeBoundaryCond(Up);
 
 %% Forces vector assembly
 
@@ -114,22 +105,21 @@ load('Variables.mat');
 end
 
 %% Solve system
-K = KB;
+K = KB + KS;
 F = FB;
 
 [u,FR] = solve_system(u,K,F,If,Ip);
 
 %% Compute strain and stress
 
-[Sa,Ss,St,Sb,Fx,Fy,Fz,Mx,My,Mz] = compute_interal_forces_strain(Nnod-1,Tn_b,u,BBa,BBs,BBt,BBb,RB,KBa,KBb,KBs,KBt);
+% (NOT NECESSARY UNTIL NOW) [Sa,Ss,St,Sb,Fx,Fy,Fz,Mx,My,Mz] = compute_interal_forces_strain(Nnod-1,Tn_b,u,BBa,BBs,BBt,BBb,RB,KBa,KBb,KBs,KBt);
+
+[sigVM] = ComputeVonMissesStresses(Tn_s, Tm_s, u, Bs, Bmt, Bmn, Bb, R, nuS, ES, hS);
 
 %% Plot (a) - deformed state and stress distribution
 
-scale = 1; % Set appropriate scale to visualize the deformation
-
-% only for testing
-SigVM = Sa;
-plotWing(X,Tn_s,Tm_s,u,scale,SigVM);
+scale = 0.000001; % Set appropriate scale to visualize the deformation
+plotWing(X,Tn_s,Tm_s,u,scale,sigVM);
     
 %% Modal analysis
 

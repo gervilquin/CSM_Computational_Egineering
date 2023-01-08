@@ -1,32 +1,37 @@
-function [K, Bs, Bmt, Bmn, Bb, R] = ComputeKmatrix(X,Tn_s,Tm_s,ES,hS,nuS,rhoS)
+function [K, M, Bs, Bmt, Bmn, Bb, R] = ComputeKmatrix(nDOFs, X,Tn_s,Tn_b,Tm_s,ES,hS,nuS,rhoS)
 
     % Variables
-    nel = length(Tn_s);
+    nel = size(Tn_s,1);
     nnodes = 4*nel;
-    nDOFs = 6*nnodes;
     
     % Initialisation
-    K = zeros(nDOFs);
-%     M = zeros(nDOFs);
-    R = zeros(4*5,4*6,Ne^2);
+    K = sparse(nDOFs,nDOFs);
+    M = sparse(nDOFs,nDOFs);
+    R = zeros(4*5,4*6,nel);
 
-    Bs = zeros(2,4*5,Ne^2);
-    Bmt = zeros(1,4*5,Ne^2);
-    Bmn = zeros(2,4*5,Ne^2,4);
-    Bb = zeros(3,4*5,Ne^2,4);
+    Bs = zeros(2,4*5,nel);
+    Bmt = zeros(1,4*5,nel);
+    Bmn = zeros(2,4*5,nel,4);
+    Bb = zeros(3,4*5,nel,4);
 
-    Ks = zeros(4*6,4*6,Ne^2);
-    Km = zeros(4*6,4*6,Ne^2);
-    Kb = zeros(4*6,4*6,Ne^2);
-%     N_mass = zeros(5,4*5,Ne^2,4);
-%     Me = zeros(4*6,4*6,Ne^2);
+    Ks = zeros(4*6,4*6,nel);
+    Km = zeros(4*6,4*6,nel);
+    Kb = zeros(4*6,4*6,nel);
+    N_mass = zeros(5,4*5,nel,4);
+    Me = zeros(4*6,4*6,nel);
 
     % Assembly process
-    for e=1:Ne^2
+    for e=1:nel
+        % Element properties
+        h = hS(Tm_s(e));
+        nu = nuS(Tm_s(e));
+        E = ES(Tm_s(e));
+        rho = rhoS(Tm_s(e));
+
         % rotation matrix
-        S = cross((X(Tn(e,3),:)'-X(Tn(e,1),:)'),(X(Tn(e,4),:)'-X(Tn(e,2),:)')/2);
+        S = cross((X(Tn_s(e,3),:)'-X(Tn_s(e,1),:)'),(X(Tn_s(e,4),:)'-X(Tn_s(e,2),:)')/2);
         k_prime = S/norm(S);
-        d = (X(Tn(e,2),:)'-X(Tn(e,1),:)'+X(Tn(e,3),:)'-X(Tn(e,4),:)')/2;
+        d = (X(Tn_s(e,2),:)'-X(Tn_s(e,1),:)'+X(Tn_s(e,3),:)'-X(Tn_s(e,4),:)')/2;
         i_prime = d/norm(d);
         j_prime = cross(k_prime,i_prime);
         R_prime = [i_prime j_prime k_prime      zeros(3,2);
@@ -42,7 +47,7 @@ function [K, Bs, Bmt, Bmn, Bb, R] = ComputeKmatrix(X,Tn_s,Tm_s,ES,hS,nuS,rhoS)
         for j=1:nG
             J = zeros(2);  
             for i=1:4 % 4 nodes for quadrilateral elements
-                J = J + [derN(i,1,j) derN(i,2,j)]'*X(Tn(e,i),:)*[i_prime j_prime];
+                J = J + [derN(i,1,j) derN(i,2,j)]'*X(Tn_s(e,i),:)*[i_prime j_prime];
             end
             N_global = J\[derN(:,1,j) derN(:,2,j)]';
             S = 4*det(J);
@@ -73,7 +78,7 @@ function [K, Bs, Bmt, Bmn, Bb, R] = ComputeKmatrix(X,Tn_s,Tm_s,ES,hS,nuS,rhoS)
         for j=1:nG
             J = zeros(2);  
             for i=1:4 % 4 nodes for quadrilateral elements
-                J = J + [derN(i,1,j) derN(i,2,j)]'*X(Tn(e,i),:)*[i_prime j_prime];
+                J = J + [derN(i,1,j) derN(i,2,j)]'*X(Tn_s(e,i),:)*[i_prime j_prime];
             end
             N_global = J\[derN(:,1,j) derN(:,2,j)]';
             S(e,j) = wk(j)*det(J);
@@ -103,53 +108,59 @@ function [K, Bs, Bmt, Bmn, Bb, R] = ComputeKmatrix(X,Tn_s,Tm_s,ES,hS,nuS,rhoS)
             Bb(:,:,e,j) = [Bb_node(:,:,1) Bb_node(:,:,2) Bb_node(:,:,3) Bb_node(:,:,4)];
             Kb(:,:,e) = Kb(:,:,e) + S(e,j)*R(:,:,e)'*Bb(:,:,e,j)'*Cb*Bb(:,:,e,j)*R(:,:,e);
 
-%             % Mass matrix
-%             N_node = zeros(5,5,4);
-%             for i=1:4
-%                 N_node(:,:,i) = N(i)*eye(5);
-%             end
-%             rho_matrix = rho*h*[1 0 0     0      0  ;
-%                                 0 1 0     0      0  ;
-%                                 0 0 1     0      0  ;
-%                                 0 0 0  h^2/12    0  ;
-%                                 0 0 0     0   h^2/12];
-%             N_mass(:,:,e,j) = [N_node(:,:,1) N_node(:,:,2) N_node(:,:,3) N_node(:,:,4)];
-%             Me(:,:,e) = Me(:,:,e) + S(e,j)*R(:,:,e)'*N_mass(:,:,e,j)'*rho_matrix*N_mass(:,:,e,j)*R(:,:,e);
+            % Mass matrix
+            N_node = zeros(5,5,4);
+            for i=1:4
+                N_node(:,:,i) = N(i)*eye(5);
+            end
+            rho_matrix = rho*h*[1 0 0     0      0  ;
+                                0 1 0     0      0  ;
+                                0 0 1     0      0  ;
+                                0 0 0  h^2/12    0  ;
+                                0 0 0     0   h^2/12];
+            N_mass(:,:,e,j) = [N_node(:,:,1) N_node(:,:,2) N_node(:,:,3) N_node(:,:,4)];
+            Me(:,:,e) = Me(:,:,e) + S(e,j)*R(:,:,e)'*N_mass(:,:,e,j)'*rho_matrix*N_mass(:,:,e,j)*R(:,:,e);
         end
 
         % Global K matrix assembly
         Idof = zeros(24,1);
         for j=1:6
-            Idof(j,1) = 6*(Tn(e,1)-1)+j;
-            Idof(6+j,1) = 6*(Tn(e,2)-1)+j;
-            Idof(12+j,1) = 6*(Tn(e,3)-1)+j;
-            Idof(18+j,1) = 6*(Tn(e,4)-1)+j;
+            Idof(j,1) = 6*(Tn_s(e,1)-1)+j;
+            Idof(6+j,1) = 6*(Tn_s(e,2)-1)+j;
+            Idof(12+j,1) = 6*(Tn_s(e,3)-1)+j;
+            Idof(18+j,1) = 6*(Tn_s(e,4)-1)+j;
         end
         K(Idof,Idof) = K(Idof,Idof) + Km(:,:,e) + Kb(:,:,e) + Ks(:,:,e);
-%         M(Idof,Idof) = M(Idof,Idof) + Me(:,:,e);
+        M(Idof,Idof) = M(Idof,Idof) + Me(:,:,e);
     end
 
     % Artificial rotation stiffness matrix
-    n = zeros(3,(Ne+1)^2);
-    k = zeros(3,Ne^2);
-    for e=1:Ne^2
+    n = zeros(3,nnodes);
+    k = zeros(3,nel);
+
+     % Element properties
+    h = hS(Tm_s(e));
+    E = ES(Tm_s(e));
+
+    for e=1:nel
         % Compute normal and surface
-        S_matrix = cross((X(Tn(e,3),:)'-X(Tn(e,1),:)'),(X(Tn(e,4),:)'-X(Tn(e,2),:)')/2);
+        S_matrix = cross((X(Tn_s(e,3),:)'-X(Tn_s(e,1),:)'),(X(Tn_s(e,4),:)'-X(Tn_s(e,2),:)')/2);
         S(e) = sqrt(S_matrix(1)^2 + S_matrix(2)^2 + S_matrix(3)^2);
         k(:,e) = S_matrix/S(e);
 
         % Assemble to get nodal normal
         for i=1:4
-            n(:,Tn(e,i)) = n(:,Tn(e,i)) + k(:,e);
+            n(:,Tn_s(e,i)) = n(:,Tn_s(e,i)) + k(:,e);
         end
     end
     % Compute artificial rotation matrix
-    Kr = zeros(nDOFs);
-    for e=1:Ne^2
+    Kr = sparse(nDOFs,nDOFs);
+    for e=1:nel
         for i=1:4
-            angle = rad2deg( acos( dot(n(:,Tn(e,i)),k(:,e))/sqrt(dot(n(:,Tn(e,i)),n(:,Tn(e,i)))) ) );
-            if angle < 5
-                Idof = 6*(Tn(e,i)-1) + [4,5,6]';
+            angle = rad2deg( acos( dot(n(:,Tn_s(e,i)),k(:,e))/sqrt(dot(n(:,Tn_s(e,i)),n(:,Tn_s(e,i)))) ) );
+            ind_beam = ismember(Tn_s(e,i),Tn_b(:));
+            if angle < 5 && ind_beam == false
+                Idof = 6*(Tn_s(e,i)-1) + [4,5,6]';
                 Kr(Idof,Idof) = Kr(Idof,Idof) + E*h*S(e)*k(:,e)*k(:,e)';
             end
         end

@@ -1,21 +1,27 @@
-function [sigVM] = ComputeVonMissesStresses(Tn, u, Bs, Bmt, Bmn, Bb, R, nu, E, h)
+function [sigVM] = ComputeVonMissesStresses(Tn_s, Tm_s, u, Bs, Bmt, Bmn, Bb, R, nuS, ES, hS)
     % Initialisation
+    nel = size(Tn_s,1);
     Idof = zeros(4*6,1);
-    eps_b = zeros(3,size(Tn,1),4);
-    eps_m = zeros(3,size(Tn,1),4);
-    eps_s = zeros(2,size(Tn,1),4);
-    sig_b = zeros(3,size(Tn,1),4);
-    sig_m = zeros(3,size(Tn,1),4);
-    sig_s = zeros(2,size(Tn,1),4);
-    sigVM = zeros(size(Tn,1),4);
+    eps_b = zeros(3,nel,4);
+    eps_m = zeros(3,nel,4);
+    eps_s = zeros(2,nel,4);
+    sig_b = zeros(3,nel,4);
+    sig_m = zeros(3,nel,4);
+    sig_s = zeros(2,nel,4);
+    sigVM = zeros(nel,4);
 
-    for e=1:size(Tn,1)
+    for e=1:nel
+        % Element properties
+        h = hS(Tm_s(e));
+        nu = nuS(Tm_s(e));
+        E = ES(Tm_s(e));
+
         % Get strain components
         for j=1:6 % #ndofs
-            Idof(j,1) = 6*(Tn(e,1)-1) + j;
-            Idof(6+j,1) = 6*(Tn(e,2)-1) + j;
-            Idof(12+j,1) = 6*(Tn(e,3)-1) + j;
-            Idof(18+j,1) = 6*(Tn(e,4)-1) + j;
+            Idof(j,1) = 6*(Tn_s(e,1)-1) + j;
+            Idof(6+j,1) = 6*(Tn_s(e,2)-1) + j;
+            Idof(12+j,1) = 6*(Tn_s(e,3)-1) + j;
+            Idof(18+j,1) = 6*(Tn_s(e,4)-1) + j;
         end
         
         for k=1:4 % #ngauss
