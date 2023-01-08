@@ -5,7 +5,8 @@ function Up = prescribed_dof(y_fix_nodes,X)
     Up =zeros(length(index_nodes_yp)*DOF,3);
 
     for i =1:length(index_nodes_yp)
-        index_x_up = (index_nodes_yp(i)-1)*DOF;
+        %index_x_up = (index_nodes_yp(i)-1)*DOF;
+        index_x_up = (i-1)*DOF;
 
                         %       u   n                   j 
         Up(index_x_up+1,:) = [  0   index_nodes_yp(i)   1];
