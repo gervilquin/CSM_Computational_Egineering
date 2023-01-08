@@ -79,6 +79,9 @@ ktB = [kt];
 % Compute stiffness and mass matrix
 [KS, MS, Bs, Bmt, Bmn, Bb, R] = ComputeKmatrix(Ndof,X,Tn_s,Tn_b,Tm_s,ES,hS,nuS,rhoS);
 
+% Assembly mass and stifness matrix
+K = KB + KS;
+M = MB + MS;
 
 %% Forces vector assembly
 
@@ -87,11 +90,17 @@ P = zeros(Nnod,6);
 B = zeros(Nnod,6);
 
 % Force vector assembly
-[FB] = compute_force_vector_beams(Nnod-1,Fe,Qe,Be,Tn_b,MBe,RB,NekB,leB,xi,w);
+[FB] = compute_force_vector_beams(Nnod-1,Fe,Pe,Qe,Tn_b,MBe,RB,NekB,leB,xi,w);
+
+[FS] = ComputeFvector(X,Tn_s,Pe);
+
 
 %% Boundary conditions
 
-[u,If,Ip] = Compute_boundary_conditions(Nnod-1,Up);
+[u,If,Ip] = Compute_boundary_conditions(Nnod-1,Up); % Toni
+
+
+[If, Ip, u] = ComputeBoundaryCond(Up); % Gerard
 
 %% Save data
 
@@ -115,6 +124,8 @@ F = FB;
 % (NOT NECESSARY UNTIL NOW) [Sa,Ss,St,Sb,Fx,Fy,Fz,Mx,My,Mz] = compute_interal_forces_strain(Nnod-1,Tn_b,u,BBa,BBs,BBt,BBb,RB,KBa,KBb,KBs,KBt);
 
 [sigVM] = ComputeVonMissesStresses(Tn_s, Tm_s, u, Bs, Bmt, Bmn, Bb, R, nuS, ES, hS);
+
+%[Sa,Ss,St,Sb,Fx,Fy,Fz,Mx,My,Mz] = compute_interal_forces_strain(Nnod-1,Tn_b,u,BBa,BBs,BBt,BBb,RB,KBa,KBb,KBs,KBt);
 
 %% Plot (a) - deformed state and stress distribution
 
