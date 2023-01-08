@@ -1,7 +1,9 @@
-function [K, Bs, Bmt, Bmn, Bb, R] = ComputeKmatrix(Ne,X,Tn,E,h,nu)
+function [K, Bs, Bmt, Bmn, Bb, R] = ComputeKmatrix(X,Tn_s,Tm_s,ES,hS,nuS,rhoS)
 
     % Variables
-    nDOFs = ((Ne+1)^2)*6;
+    nel = length(Tn_s);
+    nnodes = 4*nel;
+    nDOFs = 6*nnodes;
     
     % Initialisation
     K = zeros(nDOFs);

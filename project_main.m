@@ -80,7 +80,14 @@ KS = sparse(Ndof,Ndof);
 MS = sparse(Ndof,Ndof);
 
 % Element matrices and assembly
-% ...
+% 2) Compute stiffness matrix
+    [K, Bs, Bmt, Bmn, Bb, R] = ComputeKmatrix(X,Tn_s,Tm_s,ES,hS,nuS,rhoS);
+
+    % 3) Compute global force vector
+    [F] = ComputeFvector(X,Tn_s,Pe);
+    
+    % 4) Boundary conditions
+    [If, Ip, u] = ComputeBoundaryCond(Up);
 
 %% Forces vector assembly
 
