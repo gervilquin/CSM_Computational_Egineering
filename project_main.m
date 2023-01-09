@@ -3,7 +3,7 @@ clear
 close all
 addpath("functions\")
 
-JumpToSolver = false; % Set to true once you are confident about the
+JumpToSolver = true; % Set to true once you are confident about the
                       % precomputations (mass and stiffness matrices and 
                       % force vector assemblies) to go directly to the 
                       % solver parts
@@ -19,6 +19,7 @@ Nnod = length(X(:,1));
 Ndof = Nnod*6;
 AoA = deg2rad(10);
 p_inf = 1.5625e5;
+%p_inf = 0;
 g = -9.81;
 
 % Material properties
@@ -29,8 +30,8 @@ g = -9.81;
 
     % Youngs modulus
     % material: 1       2       3       
-    ES = [       200     180     100]; %GPa
-    EB = [       190]; %GPa
+    ES = [       200     180     100]*(10^9); %Pa
+    EB = [       190]*(10^9); %Pa
 
     % Poisson ratio
     nuS = [      0.27    0.3     0.33];
@@ -41,95 +42,70 @@ g = -9.81;
     rhoB = [     2200]; %kg/m^3
 
     % Thickness / diameter
-    hS = [       1.5     15      3]; %mm
-    dB = [       10]; %mm
+    hS = [       1.5     15      3]*10^(-3); %m
+    dB = [       10]*10^(-3); %m
 
 % Prescribed degrees of freedom
-Up = prescribed_dof(0,X);
+Up = AssignPrescribedDisplacements(0,X); % Prescribed displacements are 0 for all DOFs of each prescribed node
 
-% Distributed body forces (N/kg) -- weight
-Be = body_forces(X,g);
-
-% Punctual forces
+% Point forces (N)
 Fe = [0 1 1];
-
+% Body forces (N/kg) -- weight
+Be = ComputeBodyForces(X,g);
 % Distributed surface forces (N/m2) -- pressure
-Pe = surface_forces(X,p_inf,n_u,n_l,AoA);
-Qe = [  zeros(Nnod,1),   linspace(1,Nnod,Nnod)',   3*ones(Nnod,1)];
+PeB = [0 1 1];
+PeS = ComputeSurfaceForces(X,p_inf,n_u,n_l,AoA);
 
 %% BEAMS matrices
 
 % Compute beam section properties
-[G,j_p,A,J,Iy,Iz,ky,kz,kt] = beam_section_properties(EB(1),nuB(1),dB(1));
+[G,j_p,A,J,Iy,Iz,ky,kz,kt] = BeamSectionProperties(EB(1),nuB(1),dB(1));
 GB = [0 0 0 G];
 j_pB = [j_p];
-AB = [A];
-JB = [J];
-IyB = [Iy];
-IzB = [Iz];
-kyB = [ky];
-kzB = [kz];
-ktB = [kt];
+AB = [A]; JB = [J];
+IyB = [Iy]; IzB = [Iz];
+kyB = [ky]; kzB = [kz]; ktB = [kt];
 
-% Element matrices and assembly
-[KB,KBb,KBa,KBs,KBt,BBb,BBa,BBs,BBt,MB,MBe,RB,NekB,leB,xi,w] = beam_global_matrices_assembly(Nnod,Ndof,X,Tn_b,Tm_b,j_p,EB,AB ,IyB,IzB,GB,kyB,kzB,ktB,JB,rhoB);
-
+% Compute stiffness and mass matrix
+[KB,KBb,KBa,KBs,KBt,BBb,BBa,BBs,BBt,MB,MBe,RB,NekB,leB,w] = ComputeKMmatricesBeam(Ndof,X,Tn_b,Tm_b,j_pB,EB,AB,IyB,IzB,GB,kyB,kzB,ktB,JB,rhoB);
+% Compute force vector
+[FB] = ComputeFvectorBeam(Ndof,Tn_b,Fe,PeB,Be,MBe,RB,w,NekB,leB,true);
+                         
 %% SHELLS matrices
 
 % Compute stiffness and mass matrix
-[KS, MS, Bs, Bmt, Bmn, Bb, R] = ComputeKmatrix(Ndof,X,Tn_s,Tn_b,Tm_s,ES,hS,nuS,rhoS);
-
-% Assembly mass and stifness matrix
-K = KB + KS;
-M = MB + MS;
-
-%% Forces vector assembly
-
-f = zeros(Ndof,1);
-P = zeros(Nnod,6);
-B = zeros(Nnod,6);
-
-% Force vector assembly
-[FB] = compute_force_vector_beams(Nnod-1,Fe,Pe,Qe,Tn_b,MBe,RB,NekB,leB,xi,w);
-
-[FS] = ComputeFvector(X,Tn_s,Pe);
-
+[KS, MS, BSs, BSmt, BSmn, BSb, MSe, RS, S_4, NS_mass] = ComputeKMmatricesShell(Ndof,X,Tn_s,Tn_b,Tm_s,ES,hS,nuS,rhoS);
+%% Compute force vector 
+[FS] = ComputeFvectorShell(Ndof,Tn_s,Fe,PeS,Be,MSe,RS,S_4,NS_mass,false);
 
 %% Boundary conditions
-
-[u,If,Ip] = Compute_boundary_conditions(Nnod-1,Up); % Toni
-
-
-[If, Ip, u] = ComputeBoundaryCond(Up); % Gerard
+[If, Ip, u] = ComputeBoundaryConditions(Ndof,Up);
 
 %% Save data
-
 save('Variables.mat');
-
-else
-%% Load precompued data
-
+else    
+% Load precompued data
 load('Variables.mat');
-
 end
 
 %% Solve system
+% Assembly mass and stifness matrix
 K = KB + KS;
-F = FB;
+M = MB + MS;
+F = FB + FS;
 
-[u,FR] = solve_system(u,K,F,If,Ip);
+% Equations solver
+[u,FR] = SystemSolver(K,F,u,If,Ip);
 
 %% Compute strain and stress
 
 % (NOT NECESSARY UNTIL NOW) [Sa,Ss,St,Sb,Fx,Fy,Fz,Mx,My,Mz] = compute_interal_forces_strain(Nnod-1,Tn_b,u,BBa,BBs,BBt,BBb,RB,KBa,KBb,KBs,KBt);
+[sigVM] = ComputeVonMissesStresses(Tn_s, Tm_s, u, BSs, BSmt, BSmn, BSb, RS, nuS, ES, hS);
 
-[sigVM] = ComputeVonMissesStresses(Tn_s, Tm_s, u, Bs, Bmt, Bmn, Bb, R, nuS, ES, hS);
-
-%[Sa,Ss,St,Sb,Fx,Fy,Fz,Mx,My,Mz] = compute_interal_forces_strain(Nnod-1,Tn_b,u,BBa,BBs,BBt,BBb,RB,KBa,KBb,KBs,KBt);
 
 %% Plot (a) - deformed state and stress distribution
 
-scale = 0.000001; % Set appropriate scale to visualize the deformation
+scale = 5; % Set appropriate scale to visualize the deformation
 plotWing(X,Tn_s,Tm_s,u,scale,sigVM);
     
 %% Modal analysis
