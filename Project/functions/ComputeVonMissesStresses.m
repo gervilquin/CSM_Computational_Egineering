@@ -31,7 +31,10 @@ function [sigVM] = ComputeVonMissesStresses(Tn_s, Tm_s, u, Bs, Bmt, Bmn, Bb, R, 
             eps_s(:,e,k) = Bs(:,:,e)*R(:,:,e)*u(Idof,1);
         end
         % Get stress components
-        Cp = (E/(1-nu))*[ 1   nu      0   ;
+%         Cp = (E/(1-nu))*[ 1   nu      0   ;
+%                           nu  1       0   ;
+%                           0   0   (1-nu)/2];
+        Cp = (E/(1-nu^2))*[ 1   nu      0   ;
                           nu  1       0   ;
                           0   0   (1-nu)/2];
         Cs = (E/(2*(1+nu)))*eye(2);

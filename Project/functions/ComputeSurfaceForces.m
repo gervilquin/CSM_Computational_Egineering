@@ -11,9 +11,9 @@ function Pe = ComputeSurfaceForces(X,p_inf,n_u,n_l,AoA)
         index_Pe = (i-1)*3;
 
                     %       u               n        j
-        Pe(index_Pe+1,:) = [p_node*n_l(i,1) n_l(i,4) 1];
-        Pe(index_Pe+2,:) = [p_node*n_l(i,2) n_l(i,4) 2];
-        Pe(index_Pe+3,:) = [p_node*n_l(i,3) n_l(i,4) 3];
+        Pe(index_Pe+1,:) = [-p_node*n_l(i,1) n_l(i,4) 1];
+        Pe(index_Pe+2,:) = [-p_node*n_l(i,2) n_l(i,4) 2];
+        Pe(index_Pe+3,:) = [-p_node*n_l(i,3) n_l(i,4) 3];
     end
 
 
@@ -22,9 +22,9 @@ function Pe = ComputeSurfaceForces(X,p_inf,n_u,n_l,AoA)
         index_Pe = (i-1)*3 + length(n_l(:,1))*3;
 
                     %       u               n        j
-        Pe(index_Pe+1,:) = [p_node*n_u(i,1) n_u(i,4) 1];
-        Pe(index_Pe+2,:) = [p_node*n_u(i,2) n_u(i,4) 2];
-        Pe(index_Pe+3,:) = [p_node*n_u(i,3) n_u(i,4) 3];
+        Pe(index_Pe+1,:) = [-p_node*n_u(i,1) n_u(i,4) 1];
+        Pe(index_Pe+2,:) = [-p_node*n_u(i,2) n_u(i,4) 2];
+        Pe(index_Pe+3,:) = [-p_node*n_u(i,3) n_u(i,4) 3];
     end
 
 

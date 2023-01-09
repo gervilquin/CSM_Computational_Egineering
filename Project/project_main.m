@@ -56,15 +56,18 @@ Be = ComputeBodyForces(X,g);
 PeB = [0 1 1];
 PeS = ComputeSurfaceForces(X,p_inf,n_u,n_l,AoA);
 
+sum(PeS(3:3:length(PeS(:,1)),1))
 %% BEAMS matrices
 
 % Compute beam section properties
-[G,j_p,A,J,Iy,Iz,ky,kz,kt] = BeamSectionProperties(EB(1),nuB(1),dB(1));
-GB = [0 0 0 G];
-j_pB = [j_p];
-AB = [A]; JB = [J];
-IyB = [Iy]; IzB = [Iz];
-kyB = [ky]; kzB = [kz]; ktB = [kt];
+[GB,j_pB,AB,JB,IyB,IzB,kyB,kzB,ktB] = BeamSectionProperties(EB(1),nuB(1),dB(1));
+%[G,j_p,A,J,Iy,Iz,ky,kz,kt] = BeamSectionProperties(EB(1),nuB(1),dB(1));
+%GB = [0 0 0 G];
+% GB = [G];
+% j_pB = [j_p];
+% AB = [A]; JB = [J];
+% IyB = [Iy]; IzB = [Iz];
+% kyB = [ky]; kzB = [kz]; ktB = [kt];
 
 % Compute stiffness and mass matrix
 [KB,KBb,KBa,KBs,KBt,BBb,BBa,BBs,BBt,MB,MBe,RB,NekB,leB,w] = ComputeKMmatricesBeam(Ndof,X,Tn_b,Tm_b,j_pB,EB,AB,IyB,IzB,GB,kyB,kzB,ktB,JB,rhoB);
@@ -110,7 +113,20 @@ plotWing(X,Tn_s,Tm_s,u,scale,sigVM);
     
 %% Modal analysis
 
-% ...
+% define the number of modes that want to be returned
+Nm = 12; %first 6 modes
+
+% Obtain the first eigenvectos and eigenvalues
+[V,D] = eigs(K(If,If),M(If,If),Nm,'sm');
+
+% Obtain the natural frequencies and the vibration modes
+Phi = zeros(Ndof,Nm); 
+w2 = zeros(1,Nm);
+
+for k =1:length(V(1,:))
+    Phi(If,k) = V(:,k)/sqrt(V(:,k)'*M(If,If)*V(:,k));
+    w2(k) = D(k,k);
+end
 
 %% Plot (b) - vibration modes
 
@@ -119,14 +135,40 @@ plotModes(X,Tn_s,Phi,w2);
 %% Reduced order model
 
 % 2-modes
-% ...
+N_modes = 2;
+Im = linspace(1,N_modes,N_modes);
+W_k = 0; % static case
+F_k = F;
+u2 = zeros(Ndof,1);
+
+for k =1:length(F_k(1,:))
+    for j = 1:length(Im)
+        alpha_jk = Phi(:,Im(j))'*F_k(:,k)/(w2(j)-W_k(k)^2);
+        u2(:,k) = u2(:,k)+  Phi(:,Im(j))*alpha_jk;
+    end
+end
+
+[SigVM2] = ComputeVonMissesStresses(Tn_s, Tm_s, u2, BSs, BSmt, BSmn, BSb, RS, nuS, ES, hS);
 
 plotWing(X,Tn_s,Tm_s,u2,scale,SigVM2);
 
 % 6-modes
-% ...
+N_modes = 6;
+Im = linspace(1,N_modes,N_modes);
+W_k = 0; % static case
+F_k = F;
+u6 = zeros(Ndof,1);
+
+for k =1:length(F_k(1,:))
+    for j = 1:length(Im)
+        alpha_jk = Phi(:,Im(j))'*F_k(:,k)/(w2(j)-W_k(k)^2);
+        u6(:,k) = u6(:,k)+  Phi(:,Im(j))*alpha_jk;
+    end
+end
+
+[SigVM6] = ComputeVonMissesStresses(Tn_s, Tm_s, u2, BSs, BSmt, BSmn, BSb, RS, nuS, ES, hS);
 
 plotWing(X,Tn_s,Tm_s,u6,scale,SigVM6);
 
 %% Plot (c) - leading and trailing edges vertical displacement
-% ...
+plot_wing_LE_TE(X,u,u2,u6,I_le,I_te)
