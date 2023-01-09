@@ -3,7 +3,7 @@ clear
 close all
 addpath("functions\")
 
-JumpToSolver = true; % Set to true once you are confident about the
+JumpToSolver = false; % Set to true once you are confident about the
                       % precomputations (mass and stiffness matrices and 
                       % force vector assemblies) to go directly to the 
                       % solver parts
@@ -56,7 +56,7 @@ Be = ComputeBodyForces(X,g);
 PeB = [0 1 1];
 PeS = ComputeSurfaceForces(X,p_inf,n_u,n_l,AoA);
 
-sum(PeS(3:3:length(PeS(:,1)),1))
+plot_pressuredistribution(X,n_l,n_u,p_inf,AoA)
 %% BEAMS matrices
 
 % Compute beam section properties
