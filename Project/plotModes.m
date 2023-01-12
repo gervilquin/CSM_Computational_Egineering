@@ -24,7 +24,7 @@ for i = 1:ceil(Nmodes/6)
             set(gca,'DataAspectRatio',[1,1,1],'xcolor','none','ycolor','none','zcolor','none','color','none');
             view(150,10)
             if nargin>3
-                title(sprintf('f = %g Hz',sqrt(w2(k))/2/pi));
+                title(sprintf('f = %g Hz',sqrt(w2(k))/2/pi),'Interpreter','latex');
             end
         end
     end

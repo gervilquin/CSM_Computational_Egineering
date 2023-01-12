@@ -17,7 +17,11 @@ hold on
 x = X(:,1)+scale*u(1:6:end);
 y = X(:,2)+scale*u(2:6:end);
 z = X(:,3)+scale*u(3:6:end);
+x_orig = X(:,1);
+y_orig = X(:,2);
+z_orig = X(:,3);
 patch(x(Tn_s)',y(Tn_s)',z(Tn_s)',ones(size(Tn_s))','facecolor','none','edgecolor','k');
+patch(x_orig(Tn_s)',y_orig(Tn_s)',z_orig(Tn_s)',ones(size(Tn_s))','facecolor','none','edgecolor','#808080');
 % Plot Von Mises in upper and lower skins
 if nargin>5
     for e = 1:size(Tn_s,1)
@@ -45,9 +49,12 @@ if nargin>5
     % Color axis
     caxis([0,max([sigVM(:);1])]);
     cb = colorbar;
-    set(cb,'ticks',[0,max([sigVM(:);1])]);
+    colormap jet
+    %set(cb,'ticks',[0,max([sigVM(:);1])]);
+    set(cb,'ticks',linspace(0,max([sigVM(:);1]),10));
+    ylabel(cb,"Von Mises stress [Pa]",'Interpreter','latex') % Add label
     set(gca,'DataAspectRatio',[1,1,1],'xcolor','none','ycolor','none','zcolor','none','color','none');
     view(-37,18)
-    title(sprintf('Scale = %g',scale));
+    title(sprintf('Scale = %g',scale),'Interpreter','latex');
 end
 end

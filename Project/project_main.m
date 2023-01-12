@@ -3,7 +3,7 @@ clear
 close all
 addpath("functions\")
 
-JumpToSolver = false; % Set to true once you are confident about the
+JumpToSolver = true; % Set to true once you are confident about the
                       % precomputations (mass and stiffness matrices and 
                       % force vector assemblies) to go directly to the 
                       % solver parts

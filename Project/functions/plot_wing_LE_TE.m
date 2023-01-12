@@ -11,27 +11,27 @@ function plot_wing_LE_TE(X,u,u2,u6,I_LE,I_TE)
     figure()
     title("Leading Edge",'Interpreter','latex')
     hold on
-    plot(X(I_LE,2),u_matrix(I_LE,3),'-x','color','black','DisplayName','inverse')
-    plot(X(I_LE,2),u2_matrix(I_LE,3),'color','blue','DisplayName','2 modes')
-    plot(X(I_LE,2),u6_matrix(I_LE,3),'color','green','DisplayName','6 modes')
+    plot(X(I_LE,2),u_matrix(I_LE,3),'-x','color','black','DisplayName','Static solution')
+    plot(X(I_LE,2),u2_matrix(I_LE,3),'color','blue','DisplayName','MOR 2 modes')
+    plot(X(I_LE,2),u6_matrix(I_LE,3),'color','green','DisplayName','MOR 6 modes')
     legend("Interpreter","latex",'Location','northwest')
     grid on
     grid minor
     xlabel("Y[m]",'Interpreter','latex')
-    ylabel("$u_y[m]$",'Interpreter','latex')
+    ylabel("$u_z[m]$",'Interpreter','latex')
     hold off
 
     figure()
     title("Trailing Edge",'Interpreter','latex')
     hold on
-    plot(X(I_TE,2),u_matrix(I_TE,3),'-x','color','black','DisplayName','inverse')
-    plot(X(I_TE,2),u2_matrix(I_TE,3),'color','blue','DisplayName','2 modes')
-    plot(X(I_TE,2),u6_matrix(I_TE,3),'color','green','DisplayName','6 modes')
+    plot(X(I_TE,2),u_matrix(I_TE,3),'-x','color','black','DisplayName','Static solution')
+    plot(X(I_TE,2),u2_matrix(I_TE,3),'color','blue','DisplayName','MOR 2 modes')
+    plot(X(I_TE,2),u6_matrix(I_TE,3),'color','green','DisplayName','MOR 6 modes')
     legend("Interpreter","latex",'Location','northwest')
     grid on
     grid minor
     xlabel("Y[m]",'Interpreter','latex')
-    ylabel("$u_y[m]$",'Interpreter','latex')
+    ylabel("$u_z[m]$",'Interpreter','latex')
     hold off
 
     figure()
@@ -48,7 +48,7 @@ function plot_wing_LE_TE(X,u,u2,u6,I_LE,I_TE)
     grid on
     grid minor
     xlabel("Y[m]",'Interpreter','latex')
-    ylabel("$u_y[m]$",'Interpreter','latex')
+    ylabel("$u_z[m]$",'Interpreter','latex')
     hold off
 
 
